@@ -272,7 +272,7 @@ C2H_TEST("For works with C++ source operations using custom headers", "[for]")
   config.num_extra_include_dirs  = 1;
 
   // Build with _ex version
-  cccl_device_for_build_result_t build;
+  cccl_device_for_build_result_t build{};
   const auto& build_info = BuildInformation<>::init();
   REQUIRE(
     CUDA_SUCCESS
