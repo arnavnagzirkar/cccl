@@ -45,6 +45,7 @@ struct TripleChevronFactory
     dim3 grid, dim3 block, ::cuda::std::size_t shared_mem, ::cudaStream_t stream, bool dependent_launch = false) const
   {
     __assert_pdl_allowed(dependent_launch);
+    assert_current_device_matches_stream(stream);
     return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
   }
 

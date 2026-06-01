@@ -312,3 +312,54 @@ C2H_TEST("MaxPotentialDynamicSmemBytes", "[util][launch]")
   REQUIRE(cub::MaxPotentialDynamicSmemBytes(dyn_smem_size, nullptr) != cudaSuccess);
   REQUIRE(dyn_smem_size == -1);
 }
+
+#if _CCCL_CTK_AT_LEAST(12, 3)
+
+//! @brief Tests that assert_current_device_matches_stream does not fire when the stream is associated with the current
+//!        device. Special streams (nullptr, cudaStreamLegacy, cudaStreamPerThread) must also be accepted.
+C2H_TEST("assert_current_device_matches_stream passes for matching stream", "[util][stream]")
+{
+  // Special streams must always pass (they're always associated with the current device).
+  REQUIRE_NOTHROW(cub::detail::assert_current_device_matches_stream(nullptr));
+  REQUIRE_NOTHROW(cub::detail::assert_current_device_matches_stream(::cudaStreamLegacy));
+  REQUIRE_NOTHROW(cub::detail::assert_current_device_matches_stream(::cudaStreamPerThread));
+
+  // A stream created on the current device must pass.
+  ::cudaStream_t stream{};
+  REQUIRE(cudaSuccess == ::cudaStreamCreate(&stream));
+  REQUIRE_NOTHROW(cub::detail::assert_current_device_matches_stream(stream));
+  REQUIRE(cudaSuccess == ::cudaStreamDestroy(stream));
+}
+
+#  if TEST_LAUNCH == 0 // Multi-device tests only make sense for host-side launches
+
+//! @brief Tests that assert_current_device_matches_stream correctly identifies a stream on a
+//!        different device than the current CUDA device (requires 2+ devices).
+//!        NOTE: The mismatch path triggers _CCCL_ASSERT which aborts the process in debug builds,
+//!        so we only verify that the function can determine the stream's device successfully.
+C2H_TEST("assert_current_device_matches_stream identifies stream device", "[util][stream]")
+{
+  if (cub::DeviceCount() < 2)
+  {
+    SKIP("Test requires at least two CUDA devices");
+  }
+
+  // Create a stream on device 0.
+  REQUIRE(cudaSuccess == ::cudaSetDevice(0));
+  ::cudaStream_t stream_on_device_0{};
+  REQUIRE(cudaSuccess == ::cudaStreamCreate(&stream_on_device_0));
+
+  // Verify cudaStreamGetDevice returns the expected device for a stream on device 0.
+  int stream_device = -1;
+  REQUIRE(cudaSuccess == ::cudaStreamGetDevice(stream_on_device_0, &stream_device));
+  REQUIRE(stream_device == 0);
+
+  // The assert_current_device_matches_stream should pass when called from device 0.
+  REQUIRE_NOTHROW(cub::detail::assert_current_device_matches_stream(stream_on_device_0));
+
+  REQUIRE(cudaSuccess == ::cudaStreamDestroy(stream_on_device_0));
+}
+
+#  endif // TEST_LAUNCH == 0
+
+#endif // _CCCL_CTK_AT_LEAST(12, 3)
