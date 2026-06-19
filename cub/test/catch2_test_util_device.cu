@@ -313,7 +313,7 @@ C2H_TEST("MaxPotentialDynamicSmemBytes", "[util][launch]")
   REQUIRE(dyn_smem_size == -1);
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 3)
+#if _CCCL_CTK_AT_LEAST(12, 8)
 
 //! @brief Tests that assert_current_device_matches_stream does not fire when the stream is associated with the current
 //!        device. Special streams (nullptr, cudaStreamLegacy, cudaStreamPerThread) must also be accepted.
@@ -362,4 +362,4 @@ C2H_TEST("assert_current_device_matches_stream identifies stream device", "[util
 
 #  endif // TEST_LAUNCH == 0
 
-#endif // _CCCL_CTK_AT_LEAST(12, 3)
+#endif // _CCCL_CTK_AT_LEAST(12, 8)

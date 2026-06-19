@@ -540,12 +540,12 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
 //!        This check is only performed in host code.
 //!        The check is skipped for special streams (`nullptr`, `::cudaStreamLegacy`, and
 //!        `::cudaStreamPerThread`), since those are always associated with the current device.
-//!        Requires CUDA 12.3 or later; on older toolkits this function is a no-op.
+//!        Requires CUDA 12.8 or later; on older toolkits this function is a no-op.
 //!
 //! @param stream The CUDA stream to validate against the current device.
 CUB_RUNTIME_FUNCTION inline void assert_current_device_matches_stream([[maybe_unused]] ::cudaStream_t stream)
 {
-#  if _CCCL_CTK_AT_LEAST(12, 3)
+#  if _CCCL_CTK_AT_LEAST(12, 8)
   NV_IF_TARGET(NV_IS_HOST, ({
     // Special streams are always associated with the current device; skip the check.
     if (stream == nullptr || stream == ::cudaStreamLegacy || stream == ::cudaStreamPerThread)
@@ -567,7 +567,7 @@ CUB_RUNTIME_FUNCTION inline void assert_current_device_matches_stream([[maybe_un
                  "A CUB algorithm's stream is associated with a different device than the current CUDA device. "
                  "Ensure the current device is set to the stream's device before calling CUB algorithms.");
   }))
-#  endif // _CCCL_CTK_AT_LEAST(12, 3)
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
 }
 
 } // namespace detail
