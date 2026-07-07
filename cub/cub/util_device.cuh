@@ -537,7 +537,10 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
 }
 
 //! @brief Asserts that the provided @p stream is associated with the current CUDA device.
-//!        This check is only performed in host code.
+//!        This check is only performed in host code, and only when host assertions are enabled
+//!        (see `CCCL_ENABLE_ASSERTIONS`/`CCCL_ENABLE_HOST_ASSERTIONS`). The extra CUDA API calls needed to
+//!        perform this check are skipped entirely in builds without assertions, so this check adds no
+//!        overhead to release builds.
 //!        The check is skipped for special streams (`nullptr`, `::cudaStreamLegacy`, and
 //!        `::cudaStreamPerThread`), since those are always associated with the current device.
 //!        Requires CUDA 12.8 or later; on older toolkits this function is a no-op.
@@ -545,31 +548,31 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
 //! @param stream The CUDA stream to validate against the current device.
 CUB_RUNTIME_FUNCTION inline void assert_current_device_matches_stream([[maybe_unused]] ::cudaStream_t stream)
 {
-#  if _CCCL_CTK_AT_LEAST(12, 8)
+#  if _CCCL_CTK_AT_LEAST(12, 8) && defined(CCCL_ENABLE_HOST_ASSERTIONS)
   NV_IF_TARGET(NV_IS_HOST, ({
-    // Special streams are always associated with the current device; skip the check.
-    if (stream == nullptr || stream == ::cudaStreamLegacy || stream == ::cudaStreamPerThread)
-    {
-      return;
-    }
-    int stream_device = -1;
-    // If the query fails (e.g., for an invalid stream), skip the check.
-    if (::cudaStreamGetDevice(stream, &stream_device) != ::cudaSuccess)
-    {
-      return;
-    }
-    int current_device = -1;
-    if (::cudaGetDevice(&current_device) != ::cudaSuccess)
-    {
-      return;
-    }
-    _CCCL_ASSERT(stream_device == current_device,
-                 "A CUB algorithm's stream is associated with a different device than the current CUDA device. "
-                 "Ensure the current device is set to the stream's device before calling CUB algorithms.");
-  }))
-#  endif // _CCCL_CTK_AT_LEAST(12, 8)
+                 // Special streams are always associated with the current device; skip the check.
+                 if (stream == nullptr || stream == ::cudaStreamLegacy || stream == ::cudaStreamPerThread)
+                 {
+                   return;
+                 }
+                 int stream_device = -1;
+                 // If the query fails (e.g., for an invalid stream), skip the check.
+                 if (::cudaStreamGetDevice(stream, &stream_device) != ::cudaSuccess)
+                 {
+                   return;
+                 }
+                 int current_device = -1;
+                 if (::cudaGetDevice(&current_device) != ::cudaSuccess)
+                 {
+                   return;
+                 }
+                 _CCCL_ASSERT(
+                   stream_device == current_device,
+                   "A CUB algorithm's stream is associated with a different device than the current CUDA device. "
+                   "Ensure the current device is set to the stream's device before calling CUB algorithms.");
+               }))
+#  endif // _CCCL_CTK_AT_LEAST(12, 8) && CCCL_ENABLE_HOST_ASSERTIONS
 }
-
 } // namespace detail
 
 /**

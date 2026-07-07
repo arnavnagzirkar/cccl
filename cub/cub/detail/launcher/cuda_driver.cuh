@@ -89,6 +89,7 @@ struct CudaDriverLauncherFactory
   operator()(dim3 grid, dim3 block, unsigned int shared_mem, ::CUstream stream, bool dependent_launch = false) const
   {
     __assert_pdl_allowed(dependent_launch);
+    ::cub::detail::assert_current_device_matches_stream(stream);
     return CudaDriverLauncher{grid, block, shared_mem, stream, dependent_launch};
   }
 
